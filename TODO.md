@@ -1,0 +1,4 @@
+- selectAll
+- updateOne
+- deleteOne
+- replace sqlite with postgres

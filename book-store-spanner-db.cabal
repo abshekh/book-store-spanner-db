@@ -1,16 +1,7 @@
-cabal-version: 1.12
-
-name:           book-store-spanner-db
-version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/book-store-spanner-db#readme>
-homepage:       https://github.com/githubuser/book-store-spanner-db#readme
-bug-reports:    https://github.com/githubuser/book-store-spanner-db/issues
-author:         Author name here
-maintainer:     example@example.com
-copyright:      2023 Author name here
-license:        BSD3
-license-file:   LICENSE
-build-type:     Simple
+cabal-version:       2.4
+name:                book-store-spanner-db
+version:             0.1.0.0
+author:              Abhishek Singh
 extra-source-files:
     README.md
 
@@ -18,26 +9,44 @@ source-repository head
   type: git
   location: https://github.com/githubuser/book-store-spanner-db
 
-executable book-store-spanner-db-exe
-  main-is: Main.hs
-  other-modules:
-      Models.Book
-      Repository.BookRepository
-  hs-source-dirs:
-      src
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      aeson
-    , base >=4.7 && <5
-    , http-client
-    , http-types
-    , markdown-unlit
-    , servant
-    , servant-client
-    , servant-server
-    , sqlite-simple
-    , transformers
-    , uuid
-    , wai
-    , warp
-  default-language: Haskell2010
+executable            book-store-spanner-db-exe
+  main-is:            Main.hs
+  other-modules:      Reader
+               ,      Models.Book
+               ,      Repository.BookRepository
+               ,      Storage.Queries.Book
+               ,      Storage.Queries.DBQueries
+               ,      Storage.Types.Book
+               ,      Storage.Types.DB
+  hs-source-dirs:     src
+  ghc-options:        -Wall
+  default-extensions: StandaloneDeriving
+                    , TypeFamilies
+                    , TypeSynonymInstances
+                    , DeriveGeneric
+                    , FlexibleInstances
+                    , FlexibleContexts
+                    , DeriveAnyClass
+                    , MultiParamTypeClasses
+                    , RecordWildCards
+                    , OverloadedStrings
+                    , AllowAmbiguousTypes
+                    , RankNTypes
+  build-depends:      aeson
+               ,      base
+               ,      http-client
+               ,      http-types
+               ,      markdown-unlit
+               ,      servant
+               ,      servant-client
+               ,      servant-server
+               ,      sqlite-simple
+               ,      text
+               ,      transformers
+               ,      uuid
+               ,      wai
+               ,      warp
+               ,      beam-core
+               ,      postgresql-simple
+               ,      beam-postgres
+  default-language:   Haskell2010
