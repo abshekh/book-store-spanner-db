@@ -66,8 +66,3 @@
 @desc    Delete a book by id
 @resp    NoContent
 ```
-
-## TODOs:
-- add proper error response message
-- send confirmation if delete was successful
-- updating a non-existant book results in nothing, should throw an error

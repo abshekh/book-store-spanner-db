@@ -32,6 +32,8 @@ executable            book-store-spanner-db-exe
                     , OverloadedStrings
                     , AllowAmbiguousTypes
                     , RankNTypes
+                    , DerivingStrategies
+                    , GeneralizedNewtypeDeriving
   build-depends:      aeson
                ,      base
                ,      http-client
@@ -51,4 +53,5 @@ executable            book-store-spanner-db-exe
                ,      beam-postgres
                ,      bytestring
                ,      exceptions
+               ,      mtl
   default-language:   Haskell2010

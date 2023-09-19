@@ -8,22 +8,20 @@ import qualified Data.Text.Encoding as BL
 import Database.PostgreSQL.Simple
 import qualified Servant as S
 
-type ReaderH = ReaderT Env S.Handler
-
-type ReaderIO = ReaderT Env IO
-
 newtype Env = Env
   { sqlConn :: Connection
   }
 
-getSqlConnection :: ReaderH Connection
-getSqlConnection = do
-  Env {..} <- ask
-  return sqlConn
+type ReaderIO a = ReaderT Env IO a
 
 data ApiError = ApiError S.ServerError Text
 
-throwApi :: ApiError -> ReaderH a
+throwApi :: ApiError -> ReaderIO a
 throwApi = C.throwM . toServantError
   where
     toServantError (ApiError errCode err) = errCode {S.errBody = BL.fromStrict $ BL.encodeUtf8 err}
+
+getSqlConnection :: ReaderIO Connection
+getSqlConnection = do
+  Env {..} <- ask
+  return sqlConn
