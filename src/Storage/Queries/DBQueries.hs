@@ -1,10 +1,12 @@
 module Storage.Queries.DBQueries where
 
+import Control.Monad.Trans.Class (MonadTrans (lift))
 import qualified Database.Beam as B
 import qualified Database.Beam.Backend as B
 import qualified Database.Beam.Backend.SQL.BeamExtensions as B
 import Database.Beam.Postgres (Postgres, runBeamPostgresDebug)
-import qualified Database.PostgreSQL.Simple as PostgreSQL
+import qualified Reader as R
+import Control.Monad.IO.Class (MonadIO(liftIO))
 
 selectOneMaybe ::
   ( B.Beamable table,
@@ -12,16 +14,17 @@ selectOneMaybe ::
     B.FromBackendRow be (table B.Identity),
     be ~ Postgres
   ) =>
-  PostgreSQL.Connection ->
   B.DatabaseEntity be db (B.TableEntity table) ->
   (table (B.QExpr be B.QBaseScope) -> B.QExpr be B.QBaseScope B.SqlBool) ->
-  IO (Maybe (table B.Identity))
-selectOneMaybe conn dbTable predicate = do
-  runBeamPostgresDebug putStrLn conn $
-    B.runSelectReturningOne $
-      B.select $
-        B.filter_' predicate $
-          B.all_ dbTable
+  R.ReaderH (Maybe (table B.Identity))
+selectOneMaybe dbTable predicate = do
+  conn <- R.getSqlConnection
+  liftIO $
+    runBeamPostgresDebug putStrLn conn $
+      B.runSelectReturningOne $
+        B.select $
+          B.filter_' predicate $
+            B.all_ dbTable
 
 selectAll ::
   ( B.Beamable table,
@@ -29,14 +32,15 @@ selectAll ::
     B.FromBackendRow be (table B.Identity),
     be ~ Postgres
   ) =>
-  PostgreSQL.Connection ->
   B.DatabaseEntity be db (B.TableEntity table) ->
-  IO [table B.Identity]
-selectAll conn dbTable = do
-  runBeamPostgresDebug putStrLn conn $
-    B.runSelectReturningList $
-      B.select $
-        B.all_ dbTable
+  R.ReaderH [table B.Identity]
+selectAll dbTable = do
+  conn <- R.getSqlConnection
+  liftIO $
+    runBeamPostgresDebug putStrLn conn $
+      B.runSelectReturningList $
+        B.select $
+          B.all_ dbTable
 
 insertOne ::
   ( B.Beamable table,
@@ -45,15 +49,16 @@ insertOne ::
     B.FromBackendRow be (table B.Identity),
     be ~ Postgres
   ) =>
-  PostgreSQL.Connection ->
   B.DatabaseEntity Postgres db (B.TableEntity table) ->
   B.SqlInsertValues Postgres (table (B.QExpr Postgres s)) ->
-  IO (Maybe (table B.Identity))
-insertOne conn dbTable insertExp = do
+  R.ReaderH (Maybe (table B.Identity))
+insertOne dbTable insertExp = do
+  conn <- R.getSqlConnection
   list <-
-    runBeamPostgresDebug putStrLn conn $
-      B.runInsertReturningList $
-        B.insert dbTable insertExp
+    liftIO $
+      runBeamPostgresDebug putStrLn conn $
+        B.runInsertReturningList $
+          B.insert dbTable insertExp
   case list of
     [l] -> return $ Just l
     _ -> return Nothing
@@ -68,15 +73,16 @@ updateOne ::
     B.HasTableEquality be (B.PrimaryKey table),
     be ~ Postgres
   ) =>
-  PostgreSQL.Connection ->
   B.DatabaseEntity Postgres db (B.TableEntity table) ->
   table B.Identity ->
-  IO (Maybe (table B.Identity))
-updateOne conn dbTable val = do
+  R.ReaderH (Maybe (table B.Identity))
+updateOne dbTable val = do
+  conn <- R.getSqlConnection
   list <-
-    runBeamPostgresDebug putStrLn conn $
-      B.runUpdateReturningList $
-        B.save dbTable val
+    liftIO $
+      runBeamPostgresDebug putStrLn conn $
+        B.runUpdateReturningList $
+          B.save dbTable val
   case list of
     [l] -> return $ Just l
     _ -> return Nothing
@@ -86,11 +92,11 @@ delete ::
     B.FromBackendRow be (table B.Identity),
     be ~ Postgres
   ) =>
-  PostgreSQL.Connection ->
   B.DatabaseEntity Postgres db (B.TableEntity table) ->
   (forall s. table (B.QExpr be s) -> B.QExpr be s Bool) ->
-  IO [table B.Identity]
-delete conn dbTable predicate = do
-  runBeamPostgresDebug putStrLn conn $
+  R.ReaderH [table B.Identity]
+delete dbTable predicate = do
+  conn <- R.getSqlConnection
+  liftIO $ runBeamPostgresDebug putStrLn conn $
     B.runDeleteReturningList $
       B.delete dbTable predicate

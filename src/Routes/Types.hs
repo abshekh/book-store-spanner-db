@@ -1,8 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Models.Book
-  ( Book(..)
-  ) where
+module Routes.Types where
 
 import Data.Aeson
 import Data.Aeson.TH

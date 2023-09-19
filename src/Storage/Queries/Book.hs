@@ -6,13 +6,13 @@ module Storage.Queries.Book
   )
 where
 
+import qualified Reader as R
 import Control.Applicative ((<|>))
 import Data.Maybe (fromJust)
 import Data.String (IsString (fromString))
 import Data.Text
 import Database.Beam ((==.))
 import qualified Database.Beam as B
-import qualified Database.PostgreSQL.Simple as PostgreSQL
 import qualified Storage.Queries.DBQueries as Q
 import Storage.Types.Book
 import qualified Storage.Types.DB as DB
@@ -20,34 +20,33 @@ import qualified Storage.Types.DB as DB
 dbTable :: B.DatabaseEntity be DB.BookStore (B.TableEntity BookT)
 dbTable = DB.book . DB.bookStore (fromString "books") $ "public"
 
-selectOneById :: PostgreSQL.Connection -> Text -> IO (Maybe (BookT B.Identity))
-selectOneById conn id' = do
+selectOneById :: Text -> R.ReaderH (Maybe (BookT B.Identity))
+selectOneById id' = do
   Q.selectOneMaybe
-    conn
     dbTable
     (\Book {..} -> B.sqlBool_ (bookId ==. B.val_ id'))
 
-insertOneMaybe :: PostgreSQL.Connection -> Book -> IO (Maybe Book)
-insertOneMaybe conn book = do
-  Q.insertOne conn dbTable (insertExp book)
+insertOneMaybe :: Book -> R.ReaderH (Maybe Book)
+insertOneMaybe book = do
+  Q.insertOne dbTable (insertExp book)
 
-updateOneMaybe :: PostgreSQL.Connection -> Book -> IO (Maybe Book)
-updateOneMaybe conn book = do
-  Q.updateOne conn dbTable book
+updateOneMaybe :: Book -> R.ReaderH (Maybe Book)
+updateOneMaybe book = do
+  Q.updateOne dbTable book
 
-selectAll :: PostgreSQL.Connection -> IO [Book]
-selectAll conn = do
-  Q.selectAll conn dbTable
+selectAll :: R.ReaderH [Book]
+selectAll = do
+  Q.selectAll dbTable
 
-deleteOneMaybe :: PostgreSQL.Connection -> Text -> IO (Maybe Book)
-deleteOneMaybe conn id' = do
-  books <- Q.delete conn dbTable (\Book {..} -> bookId ==. B.val_ id')
+deleteOneMaybe :: Text -> R.ReaderH (Maybe Book)
+deleteOneMaybe id' = do
+  books <- Q.delete dbTable (\Book {..} -> bookId ==. B.val_ id')
   case books of
     [book] -> return $ Just book
     _ -> return Nothing
 
-upsertOne :: PostgreSQL.Connection -> Book -> IO Book
-upsertOne conn book = do
-  insertBook <- insertOneMaybe conn book
-  updateBook <- updateOneMaybe conn book
+upsertOne :: Book -> R.ReaderH Book
+upsertOne book = do
+  insertBook <- insertOneMaybe book
+  updateBook <- updateOneMaybe book
   return . fromJust $ updateBook <|> insertBook

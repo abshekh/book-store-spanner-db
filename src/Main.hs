@@ -8,13 +8,15 @@ module Main
   ( main
   ) where
 
-import Control.Monad.IO.Class
-import Database.SQLite.Simple
-import Models.Book
+import Control.Monad.Trans.Reader
 import Network.Wai.Handler.Warp
-import qualified Repository.BookRepository as BR
 import Servant
 import Servant.API.Generic (Generic)
+import qualified Reader as R
+import Control.Monad.Trans.Class (MonadTrans(lift))
+import Database.PostgreSQL.Simple (connectPostgreSQL)
+import Routes.Handler
+import Routes.Types
 
 type API
    = NamedRoutes Routes :<|> "version" :> Get '[ JSON] String :<|> "healthcheck" :> Get '[ JSON] String
@@ -28,45 +30,36 @@ data Routes mode =
     }
   deriving (Generic)
 
-app :: Application
-app = serve (Proxy @API) server
+main :: IO ()
+main = do
+  conn <- connectPostgreSQL "host=localhost port=5432 dbname=bookstore user=bilbo password=baggins"
+  let runApp = runReaderT startApp :: R.Env -> IO ()
+      env =
+        R.Env
+          { sqlConn = conn
+          }
+  runApp env
+
+startApp :: R.ReaderIO ()
+startApp = do
+  env <- ask
+  lift $ run 8081 (app env)
+
+app :: R.Env -> Application
+app env = serve (Proxy @API) server
   where
     server =
+      let getAllBooksHandler = runReaderT getAllBooks env
+          getBookHandler i = runReaderT (getBook i) env
+          postBookHandler i = runReaderT (postBook i) env
+          deleteBookHandler i = runReaderT (deleteBook i) env
+      in
       Routes
-        { _getAllBooks = getAllBooks
-        , _getBook = getBook
-        , _postBook = postBook
-        , _deleteBook = deleteBook
+        { _getAllBooks = getAllBooksHandler
+        , _getBook = getBookHandler
+        , _postBook = postBookHandler
+        , _deleteBook = deleteBookHandler
         } :<|>
       return "1.0.0" :<|>
       return "App is UP"
 
-startApp :: IO ()
-startApp = run 8080 app
-
-initDB :: FilePath -> IO ()
-initDB dbfile =
-  withConnection dbfile $ \conn ->
-    execute_
-      conn
-      "CREATE TABLE IF NOT EXISTS books (id text NOT NULL, name text NOT NULL, author text NOT NULL, PRIMARY KEY (id))"
-
-getDBFile :: FilePath
-getDBFile = "resources/test.db"
-
-getBook :: String -> Handler Book
-getBook id' = do
-  book <- liftIO $ BR.getBook getDBFile id'
-  maybe (error "Book not found") return book
-
-getAllBooks :: Handler [Book]
-getAllBooks = liftIO $ BR.getAllBooks getDBFile
-
-postBook :: Book -> Handler Book
-postBook book = liftIO $ BR.upsertBook getDBFile book
-
-deleteBook :: String -> Handler NoContent
-deleteBook id' = liftIO $ BR.deleteBook getDBFile id' >> return NoContent
-
-main :: IO ()
-main = initDB getDBFile >> startApp
