@@ -33,3 +33,5 @@ cabal.project.local~
 
 resources/
 result
+pgadapter.*
+lib/*

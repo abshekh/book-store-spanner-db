@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -18,19 +17,22 @@ import qualified Reader as R
 import Routes.Handler
 import Routes.Types
 import Servant
-import Servant.API.Generic
 import System.Environment
+import Network.Google.Resource.Spanner.Projects.Instances.Databases.Sessions.ExecuteSQL (projectsInstancesDatabasesSessionsExecuteSQL)
+import Network.Google.Spanner (executeSQLRequest)
+import Network.Google as Google
+import Control.Monad.Trans.Resource (liftResourceT, runResourceT)
+import System.IO (stdout)
 
 type API =
-  NamedRoutes Routes :<|> "version" :> Get '[JSON] String :<|> "healthcheck" :> Get '[JSON] String
-
-data Routes mode = Routes
-  { _getAllBooks :: mode :- "books" :> Get '[JSON] [Book],
-    _getBook :: mode :- "books" :> Capture "id" String :> Get '[JSON] Book,
-    _postBook :: mode :- "books" :> ReqBody '[JSON] Book :> Post '[JSON] Book,
-    _deleteBook :: mode :- "books" :> Capture "id" String :> Delete '[JSON] NoContent
-  }
-  deriving (Generic)
+  "books"
+    :> ( Get '[JSON] [Book]
+           :<|> Capture "id" String :> Get '[JSON] Book
+           :<|> ReqBody '[JSON] Book :> Post '[JSON] Book
+           :<|> Capture "id" String :> Delete '[JSON] NoContent
+       )
+    :<|> "version" :> Get '[JSON] String
+    :<|> "healthcheck" :> Get '[JSON] String
 
 main :: IO ()
 main = do
@@ -52,22 +54,30 @@ main = do
         R.Env
           { sqlConn = conn
           }
+  let e = executeSQLRequest
+  let p = projectsInstancesDatabasesSessionsExecuteSQL e "select * from books"
+
+  lgr <- Google.newLogger Google.Debug stdout
+  env <-
+    Google.newEnv
+      <&> (Google.envLogger .~ lgr)
+        . (Google.envScopes .~ Storage.storageReadWriteScope)
+  runResourceT 
+  let r = Google.send p
   run 8081 (app env)
 
 app :: R.Env -> Application
 app env = serve (Proxy @API) server
   where
-    server :: Server API
     server =
       let getAllBooksHandler = Handler $ ExceptT $ try $ runReaderT getAllBooks env
           getBookHandler i = Handler $ ExceptT $ try $ runReaderT (getBook i) env
           postBookHandler i = Handler $ ExceptT $ try $ runReaderT (postBook i) env
           deleteBookHandler i = Handler $ ExceptT $ try $ runReaderT (deleteBook i) env
-       in Routes
-            { _getAllBooks = getAllBooksHandler,
-              _getBook = getBookHandler,
-              _postBook = postBookHandler,
-              _deleteBook = deleteBookHandler
-            }
+       in ( getAllBooksHandler
+              :<|> getBookHandler
+              :<|> postBookHandler
+              :<|> deleteBookHandler
+          )
             :<|> return "1.0.0"
             :<|> return "App is UP"
