@@ -1,5 +1,17 @@
 # book-store
 
+# How to Test
+- Run [pgAdapter](https://github.com/GoogleCloudPlatform/pgadapter)
+- Add the following envs
+    ```bash
+    export dbHost="localhost" # host of pgAdapter
+    export dbPort="5433" # port on which pgAdapter is running
+    export dbName="psql-interface" # spanner db name
+    export dbUser=""
+    export dbPassword=""
+    ```
+- Run the application, which we can test the DML queries.
+
 ## Routes
 ```
 @route   GET /version
