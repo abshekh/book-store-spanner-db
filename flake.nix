@@ -16,20 +16,21 @@
             basePackages = pkgs.haskell.packages.ghc8107;
             packages = {
               aeson.source = "1.5.6.0";
-              hashable.source = "1.3.0.0";
-              hashable-time.source = "0.2.1";
-              OneTuple.source = "0.2.2.1";
               base-compat-batteries.source = "0.11.2";
               base-compat.source = "0.11.2";
-              time-compat.source = "1.9.5";
+              hashable.source = "1.4.0.0";
               http2.source = "3.0.2";
-              quickcheck-instances.source = "0.3.25.2";
+              indexed-traversable-instances.source = "0.1";
+              lens-aeson.source = "1.1.3";
             };
             settings = {
-              hashable.jailbreak = true;
+              aeson.jailbreak = true;
               doctest.check = false;
+              hashable.jailbreak = true;
               hspec-megaparsec.check = false;
-
+              lsp-types.jailbreak = true;
+              rebase.jailbreak = true;
+              tree-diff.jailbreak = true;
             };
           };
           packages.default = self'.packages.book-store-spanner-db;

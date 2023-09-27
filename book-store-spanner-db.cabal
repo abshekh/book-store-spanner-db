@@ -15,9 +15,6 @@ executable            book-store-spanner-db-exe
                ,      Routes.Handler
                ,      Routes.Types
                ,      Storage.Queries.Book
-               ,      Storage.Queries.DBQueries
-               ,      Storage.Types.Book
-               ,      Storage.Types.DB
   hs-source-dirs:     src
   ghc-options:        -Wall
   default-extensions: StandaloneDeriving
@@ -42,19 +39,19 @@ executable            book-store-spanner-db-exe
                ,      servant
                ,      servant-client
                ,      servant-server
-               ,      sqlite-simple
                ,      text
                ,      transformers
                ,      uuid
                ,      wai
                ,      warp
-               ,      beam-core
-               ,      postgresql-simple
-               ,      beam-postgres
                ,      bytestring
                ,      exceptions
                ,      mtl
                ,      gogol
                ,      gogol-spanner
+               ,      gogol-storage
                ,      resourcet
+               ,      lens
+               ,      conduit
+               ,      conduit-extra
   default-language:   Haskell2010

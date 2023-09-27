@@ -1,3 +1,5 @@
+{-# LANGUAGE DataKinds #-}
+
 module Reader where
 
 import qualified Control.Monad.Catch as C
@@ -5,11 +7,12 @@ import Control.Monad.Trans.Reader
 import qualified Data.ByteString.Lazy as BL
 import Data.Text
 import qualified Data.Text.Encoding as BL
-import Database.PostgreSQL.Simple
+import qualified Network.Google as Google
 import qualified Servant as S
 
-newtype Env = Env
-  { sqlConn :: Connection
+data Env = Env
+  { sessionName :: Text,
+    googleEnv :: Google.Env '["https://www.googleapis.com/auth/spanner.data"]
   }
 
 type ReaderIO a = ReaderT Env IO a
@@ -21,7 +24,12 @@ throwApi = C.throwM . toServantError
   where
     toServantError (ApiError errCode err) = errCode {S.errBody = BL.fromStrict $ BL.encodeUtf8 err}
 
-getSqlConnection :: ReaderIO Connection
-getSqlConnection = do
+getSessionName :: ReaderIO Text
+getSessionName = do
   Env {..} <- ask
-  return sqlConn
+  return sessionName
+
+getGoogleEnv :: ReaderIO (Google.Env '["https://www.googleapis.com/auth/spanner.data"])
+getGoogleEnv = do
+  Env {..} <- ask
+  return googleEnv

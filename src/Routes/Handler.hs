@@ -1,6 +1,5 @@
 module Routes.Handler where
 
-import Prelude hiding (id)
 import Control.Monad.Cont (MonadTrans (lift))
 import qualified Data.Text as DT
 import qualified Data.UUID.V4 as UUID
@@ -9,40 +8,38 @@ import Routes.Types
 import Servant (NoContent)
 import qualified Servant as S
 import Storage.Queries.Book
-import qualified Storage.Types.Book as DB
+import Prelude hiding (id)
 
 getBook :: String -> R.ReaderIO Book
 getBook id' = do
   bookMaybe <- selectOneById (DT.pack id')
   case bookMaybe of
-    Just book -> return $ dbBookToBook book
+    Just book -> return book
     Nothing -> R.throwApi $ R.ApiError S.err404 "Book not found"
 
 getAllBooks :: R.ReaderIO [Book]
-getAllBooks = do
-  books <- selectAll
-  return $ dbBookToBook <$> books
+getAllBooks = selectAll
 
 postBook :: Book -> R.ReaderIO Book
-postBook book = do
-  case id book of
+postBook book@(Book {id = _id}) = do
+  case _id of
     Just _ -> updateBook book
     Nothing -> insertBook book
 
 updateBook :: Book -> R.ReaderIO Book
 updateBook book = do
-  bookMaybe <- updateOneMaybe (bookToDbBook book)
+  bookMaybe <- updateOneMaybe book
   case bookMaybe of
-    Just book' -> return $ dbBookToBook book'
+    Just book' -> return book'
     Nothing -> R.throwApi $ R.ApiError S.err400 "Bad Request"
 
 insertBook :: Book -> R.ReaderIO Book
 insertBook book = do
   uuid <- lift UUID.nextRandom
   let book' = book {id = Just . DT.pack $ show uuid}
-  bookMaybe <- insertOneMaybe (bookToDbBook book')
+  bookMaybe <- insertOneMaybe book'
   case bookMaybe of
-    Just book'' -> return $ dbBookToBook book''
+    Just book'' -> return book''
     Nothing -> R.throwApi $ R.ApiError S.err400 "Bad Request"
 
 deleteBook :: String -> R.ReaderIO NoContent
@@ -51,20 +48,3 @@ deleteBook id' = do
   case books of
     Just _ -> return S.NoContent
     Nothing -> R.throwApi $ R.ApiError S.err404 "Book not found"
-
-dbBookToBook :: DB.Book -> Book
-dbBookToBook DB.Book {..} =
-  Book
-    { id = Just bookId,
-      name = bookName,
-      author = bookAuthor
-    }
-
-bookToDbBook :: Book -> DB.Book
-bookToDbBook Book {id = Just id', ..} =
-  DB.Book
-    { bookId = id',
-      bookName = name,
-      bookAuthor = author
-    }
-bookToDbBook _ = error "Something went wrong"
