@@ -1,6 +1,14 @@
 # book-store
 
 # How to Test
+- Create the following table in spanner db
+   ```sql
+    CREATE TABLE books (
+      id STRING(1024) NOT NULL,
+      name STRING(1024) NOT NULL,
+      author STRING(1024) NOT NULL
+    ) PRIMARY KEY (id);
+   ```
 - Add the following envs
     ```bash
     export spannerSessionText="projects/project-name/instances/instance-name/databases/db-name"

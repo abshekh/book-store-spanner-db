@@ -15,6 +15,7 @@ executable            book-store-spanner-db-exe
                ,      Routes.Handler
                ,      Routes.Types
                ,      Storage.Queries.Book
+               ,      Storage.Queries.DBQueries
   hs-source-dirs:     src
   ghc-options:        -Wall
   default-extensions: StandaloneDeriving
