@@ -81,3 +81,8 @@
 @desc    Delete a book by id
 @resp    NoContent
 ```
+
+# Docker Image
+```
+nix build .#dockerImage
+```
