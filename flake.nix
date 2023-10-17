@@ -25,7 +25,7 @@
           };
           packages.dockerImage =
             pkgs.dockerTools.buildImage {
-              name = "book-store-spanner-db";
+              name = "book-store-pgAdapter";
               created = "now";
               tag = builtins.substring 0 9 (self.rev or "dev");
               copyToRoot = pkgs.buildEnv {
